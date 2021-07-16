@@ -1,14 +1,12 @@
 require 'base64'
 require 'digest'
-require 'openssl'
+require 'rubygems/openssl'
 
 ##
 # S3URISigner implements AWS SigV4 for S3 Source to avoid a dependency on the aws-sdk-* gems
 # More on AWS SigV4: https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html
 class Gem::S3URISigner
-
   class ConfigurationError < Gem::Exception
-
     def initialize(message)
       super message
     end
@@ -16,11 +14,9 @@ class Gem::S3URISigner
     def to_s # :nodoc:
       "#{super}"
     end
-
   end
 
   class InstanceProfileError < Gem::Exception
-
     def initialize(message)
       super message
     end
@@ -28,7 +24,6 @@ class Gem::S3URISigner
     def to_s # :nodoc:
       "#{super}"
     end
-
   end
 
   attr_accessor :uri
@@ -49,12 +44,12 @@ class Gem::S3URISigner
     credential_info = "#{date}/#{s3_config.region}/s3/aws4_request"
     canonical_host = "#{uri.host}.s3.#{s3_config.region}.amazonaws.com"
 
-    uri.query = generate_canonical_query_params(s3_config, date_time, credential_info, expiration)
-    canonical_request = generate_canonical_request(canonical_host)
+    query_params = generate_canonical_query_params(s3_config, date_time, credential_info, expiration)
+    canonical_request = generate_canonical_request(canonical_host, query_params)
     string_to_sign = generate_string_to_sign(date_time, credential_info, canonical_request)
     signature = generate_signature(s3_config, date, string_to_sign)
 
-    URI.parse("https://#{canonical_host}#{uri.path}?#{uri.query}&X-Amz-Signature=#{signature}")
+    URI.parse("https://#{canonical_host}#{uri.path}?#{query_params}&X-Amz-Signature=#{signature}")
   end
 
   private
@@ -76,11 +71,11 @@ class Gem::S3URISigner
     end.join("&")
   end
 
-  def generate_canonical_request(canonical_host)
+  def generate_canonical_request(canonical_host, query_params)
     [
       "GET",
       uri.path,
-      uri.query,
+      query_params,
       "host:#{canonical_host}",
       "", # empty params
       "host",
@@ -93,7 +88,7 @@ class Gem::S3URISigner
       "AWS4-HMAC-SHA256",
       date_time,
       credential_info,
-      Digest::SHA256.hexdigest(canonical_request)
+      Digest::SHA256.hexdigest(canonical_request),
     ].join("\n")
   end
 
@@ -131,10 +126,10 @@ class Gem::S3URISigner
     else
       id = auth[:id] || auth["id"]
       secret = auth[:secret] || auth["secret"]
-      raise ConfigurationError.new("s3_source for #{host} missing id or secret") unless id && secret
-
       security_token = auth[:security_token] || auth["security_token"]
     end
+
+    raise ConfigurationError.new("s3_source for #{host} missing id or secret") unless id && secret
 
     region = auth[:region] || auth["region"] || "us-east-1"
     S3Config.new(id, secret, security_token, region)
@@ -150,16 +145,23 @@ class Gem::S3URISigner
     require 'rubygems/request/connection_pools'
     require 'json'
 
-    metadata_uri = URI(EC2_METADATA_CREDENTIALS)
-    @request_pool ||= create_request_pool(metadata_uri)
-    request = Gem::Request.new(metadata_uri, Net::HTTP::Get, nil, @request_pool)
+    iam_info = ec2_metadata_request(EC2_IAM_INFO)
+    # Expected format: arn:aws:iam::<id>:instance-profile/<role_name>
+    role_name = iam_info['InstanceProfileArn'].split('/').last
+    ec2_metadata_request(EC2_IAM_SECURITY_CREDENTIALS + role_name)
+  end
+
+  def ec2_metadata_request(url)
+    uri = URI(url)
+    @request_pool ||= create_request_pool(uri)
+    request = Gem::Request.new(uri, Net::HTTP::Get, nil, @request_pool)
     response = request.fetch
 
     case response
     when Net::HTTPOK then
       JSON.parse(response.body)
     else
-      raise InstanceProfileError.new("Unable to fetch AWS credentials from #{metadata_uri}: #{response.message} #{response.code}")
+      raise InstanceProfileError.new("Unable to fetch AWS metadata from #{uri}: #{response.message} #{response.code}")
     end
   end
 
@@ -170,6 +172,6 @@ class Gem::S3URISigner
   end
 
   BASE64_URI_TRANSLATE = { "+" => "%2B", "/" => "%2F", "=" => "%3D", "\n" => "" }.freeze
-  EC2_METADATA_CREDENTIALS = "http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance".freeze
-
+  EC2_IAM_INFO = "http://169.254.169.254/latest/meta-data/iam/info".freeze
+  EC2_IAM_SECURITY_CREDENTIALS = "http://169.254.169.254/latest/meta-data/iam/security-credentials/".freeze
 end

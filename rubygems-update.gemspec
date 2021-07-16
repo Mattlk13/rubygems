@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = "rubygems-update"
-  s.version = "3.1.0.pre1"
+  s.version = "3.3.0.dev"
   s.authors = ["Jim Weirich", "Chad Fowler", "Eric Hodel", "Luis Lavena", "Aaron Patterson", "Samuel Giddins", "André Arko", "Evan Phoenix", "Hiroshi SHIBATA"]
   s.email = ["", "", "drbrain@segment7.net", "luislavena@gmail.com", "aaron@tenderlovemaking.com", "segiddins@segiddins.me", "andre@arko.net", "evan@phx.io", "hsbt@ruby-lang.org"]
 
@@ -21,10 +21,10 @@ Gem::Specification.new do |s|
   s.require_paths = ["hide_lib_for_update"]
   s.rdoc_options = ["--main", "README.md", "--title=RubyGems Update Documentation"]
   s.extra_rdoc_files = [
-    "History.txt", "LICENSE.txt", "MAINTAINERS.txt",
+    "CHANGELOG.md", "LICENSE.txt", "MAINTAINERS.txt",
     "MIT.txt", "Manifest.txt", "README.md",
     "UPGRADING.md", "POLICIES.md", "CODE_OF_CONDUCT.md",
-    "CONTRIBUTING.md", "bundler/CHANGELOG.md", "bundler/CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md", "bundler/CHANGELOG.md",
     "bundler/LICENSE.md", "bundler/README.md",
     "hide_lib_for_update/note.txt", *Dir["bundler/man/*.1"]
   ]
@@ -33,11 +33,4 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0")
 
   s.specification_version = 4
-
-  s.add_development_dependency(%q<builder>, ["~> 3.0"])
-  s.add_development_dependency(%q<rdoc>, ["~> 6.0"])
-  s.add_development_dependency(%q<rake>, ["~> 12.0"])
-  s.add_development_dependency(%q<minitest>, ["~> 5.0"])
-  s.add_development_dependency(%q<simplecov>, ["~> 0"])
-  s.add_development_dependency(%q<rubocop>, ["~> 0.71.0"])
 end

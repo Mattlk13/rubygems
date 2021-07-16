@@ -5,16 +5,13 @@ require 'fileutils'
 
 URIS = [
   URI('https://rubygems.org'),
+  URI('https://www.rubygems.org'),
   URI('https://index.rubygems.org'),
   URI('https://staging.rubygems.org'),
-  URI('https://fastly.rubygems.org'),
-  URI('https://rubygems.global.ssl.fastly.net'),
 ].freeze
 
 HOSTNAMES_TO_MAP = [
-  'rubygems.global.ssl.fastly.net',
   'rubygems.org',
-  'index.rubygems.org'
 ].freeze
 
 def connect_to(uri, store)
@@ -66,7 +63,7 @@ def test_certificates(certificates, uri)
       if match
         $needed_combinations << match
         puts
-        puts match.map { |certificate| certificate.subject }
+        puts match.map {|certificate| certificate.subject }
         return
       else
         print '.'
@@ -110,7 +107,7 @@ def write_certificates(certificates)
 
     warn "overwriting certificate #{name}" if File.exist? destination
 
-    open destination, 'w' do |io|
+    File.open destination, 'w' do |io|
       io.write certificate.to_pem
     end
   end
@@ -118,7 +115,7 @@ end
 
 io =
   if ARGV.empty?
-    open OpenSSL::X509::DEFAULT_CERT_FILE
+    File.open OpenSSL::X509::DEFAULT_CERT_FILE
   else
     ARGF
   end

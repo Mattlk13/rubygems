@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 require 'openssl'
-require 'time'
 
 class CertificateBuilder
-
   attr_reader :start
 
   def initialize(key_size = 2048)
@@ -56,10 +54,10 @@ class CertificateBuilder
 
     cert.extensions = [
       ef.create_extension('subjectAltName', "email:#{subject}@example"),
-      ef.create_extension('subjectKeyIdentifier', 'hash')
+      ef.create_extension('subjectKeyIdentifier', 'hash'),
     ]
 
-    if cert != issuer_cert  # not self-signed cert
+    if cert != issuer_cert # not self-signed cert
       cert.add_extension ef.create_extension('authorityKeyIdentifier', 'keyid:always')
     end
 
@@ -68,7 +66,7 @@ class CertificateBuilder
       cert.add_extension ef.create_extension('keyUsage', 'keyCertSign', true)
     end
 
-    cert.sign issuer_key, OpenSSL::Digest::SHA1.new
+    cert.sign issuer_key, 'SHA1'
 
     puts "created cert - subject: #{cert.subject}, issuer: #{cert.issuer}"
     cert
@@ -105,7 +103,6 @@ class CertificateBuilder
 
     [validity, validity_32]
   end
-
 end
 
 cb = CertificateBuilder.new
